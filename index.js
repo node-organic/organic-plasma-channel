@@ -1,65 +1,96 @@
-var Hook = require('./lib/tinyhook')
+var swarm = require('discovery-swarm')
+var _ = require('lodash')
+var plasmaFeedback = require('organic-plasma-feedback')
 
 module.exports = function (plasma, dna) {
-  this.hook = new Hook({
-    name: dna.hookName
-  })
-
-  // hookName :: channelName :: timestamp
-  var self = this
-  this.hook.on('*::' + dna.channelName + '::*', function (c) {
-    if (c.$sender === dna.hookName) return // skip reacting on self-send chemicals
-    if (dna.log) console.log(dna.hookName, 'got chemical for a channel via hook', c, this.event)
-    c.$sender = dna.hookName
-    plasma.emit(c, (err, data) => {
-      if (dna.log) console.log(dna.hookName, 'got reaction for a channel', c, data)
-      if (err) {
-        return this.hook.emit(dna.channelName + '::' + c.$feedback_timestamp + '::error', err)
-      }
-      self.hook.emit(dna.channelName + '::' + c.$feedback_timestamp + '::result', data)
-    })
-  })
-  plasma.on({
-    channel: dna.channelName
-  }, (c, next) => {
-    if (c.$sender === dna.hookName) return // skip reacting on self-send chemicals
-    c.$sender = dna.hookName // set $sender
-    if (dna.log) console.log(dna.hookName, 'got chemical for a channel via plasma', c)
-    if (!c.$feedback_timestamp) {
-      c.$feedback_timestamp = (new Date()).getTime() + Math.random()
+  // decorate plasma with feedback support just in case it is not
+  plasma = plasmaFeedback(plasma)
+  // create discovery-swarm
+  var sw = swarm()
+  sw.join(dna.channelName) // can be any id/name/hash
+  if (dna.port) {
+    sw.listen(dna.port)
+  } else {
+    dna.port = '[dynamic]' + (Math.ceil(Math.random() * 1000) + 1000).toString()
+    sw.listen()
+  }
+  sw.on('listening', function () {
+    if (dna.log) {
+      console.log('listening', dna.port)
     }
-    this.hook.once('*::' + dna.channelName + '::' + c.$feedback_timestamp + '::error', function (err) {
-      if (dna.log) console.log(dna.hookName, 'got error reaction for a channel', c, err)
-      next(err)
-    })
-    this.hook.once('*::' + dna.channelName + '::' + c.$feedback_timestamp + '::result', function (result) {
-      if (dna.log) console.log(dna.hookName, 'got result reaction for a channel', c, result)
-      next(null, result)
-    })
-    this.hook.emit(dna.channelName + '::' + c.$feedback_timestamp, c)
-  })
-  if (dna.log) console.log('starting', dna.hookName)
-  this.hook.start(function (err) {
-    if (err) {
-      if (dna.emitError) {
-        plasma.emit(err)
-      } else {
-        console.error('during hook start', err)
-      }
-    }
-  })
-  this.hook.on('hook::ready', function () {
-    if (dna.log) console.log(dna.hookName, 'ready')
     if (dna.emitReady) {
       plasma.emit(dna.emitReady)
     }
   })
-  plasma.on('kill', () => {
-    this.hook.stop(function () {
-      if (dna.emitKilled) {
-        plasma.emit(dna.emitKilled)
+  sw.on('error', function (err) {
+    if (dna.emitErrors) {
+      plasma.emit(err)
+    } else {
+      console.error(dna.port, err)
+    }
+  })
+
+  sw.on('connection', function (connection, info) {
+    if (dna.debug) console.log(dna.port, 'got connection', info)
+    // decorate connection with specific chemical boardcast features
+    // based on organic-plasma + organic-plasma-feedback
+    connection = require('./lib/connection')(connection, dna)
+    connection.onChemical({
+      channel: dna.channelName
+    }, function (c) {
+      if (c.$sender_channel === dna.port) {
+        if (dna.debug) {
+          console.log(dna.port, 'got self-chemical [skipped local plasma emit]')
+        }
+        return
       }
-      console.log('killed')
+      if (dna.debug) console.log(dna.port, 'got chemical from a peer', c)
+      c.$sender_channel = dna.port // mark chemical so that we do not handle it
+      if (dna.debug) console.log(dna.port, 'emit chemical to local plasma')
+      plasma.emit(c, function (err, data) {
+        if (dna.log) {
+          console.log(dna.port, 'got reaction from local plasma and sending back to a peer err', err, 'data', data)
+        }
+        connection.emitChemical({
+          channel: dna.channelName,
+          err: err,
+          data: data,
+          $sender_channel: dna.port,
+          $channel_timestamp: c.$channel_timestamp
+        })
+      })
     })
+  })
+
+  plasma.on({
+    channel: dna.channelName
+  }, function (c, callback) {
+    if (c.$sender_channel === dna.port) {
+      if (dna.log) console.log(dna.port, 'got chemical emitted to local plasma [skipped boardcast]')
+      return
+    }
+    if (dna.debug) {
+      console.log(dna.port, 'broadcast local chemical ', c, 'to peers', sw.connections.length)
+    }
+    sw.connections.forEach(function (connection) {
+      connection = require('./lib/connection')(connection, dna)
+      var chemicalToEmit = _.extend(c, {
+        $channel_timestamp: (new Date().getTime()) + Math.random(),
+        $sender_channel: dna.port
+      })
+      if (callback) {
+        connection.onceChemical({
+          channel: dna.channelName,
+          $channel_timestamp: chemicalToEmit.$channel_timestamp
+        }, function (responseChemical) {
+          callback(responseChemical.err, responseChemical.data)
+        })
+      }
+      connection.emitChemical(chemicalToEmit)
+    })
+  })
+
+  plasma.on('kill', function (c, next) {
+    sw.destroy(next)
   })
 }

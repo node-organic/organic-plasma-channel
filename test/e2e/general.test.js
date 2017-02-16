@@ -3,6 +3,7 @@ var Plasma = require('organic-plasma')
 describe('e2e general', function () {
   var plasmaMaster
   var plasmaChild
+  var channelName = 'default'
   beforeEach(function (next) {
     plasmaMaster = require('organic-plasma-feedback')(new Plasma())
     plasmaChild = require('organic-plasma-feedback')(new Plasma())
@@ -11,78 +12,79 @@ describe('e2e general', function () {
   beforeEach(function (next) {
     plasmaMaster.on('masterReady', function (c) { next() })
     plasmaMaster.channel = new PlasmaChannel(plasmaMaster, {
-      hookName: 'master',
-      channelName: 'common',
-      emitReady: 'masterReady',
-      log: true
+      channelName: channelName,
+      emitReady: 'masterReady'
     })
   })
   beforeEach(function (next) {
     plasmaChild.on('childReady', function (c) { next() })
     plasmaChild.channel = new PlasmaChannel(plasmaChild, {
-      hookName: 'child',
-      channelName: 'common',
-      emitReady: 'childReady',
-      log: true
+      channelName: channelName,
+      emitReady: 'childReady'
     })
+  })
+  beforeEach(function (next) {
+    // wait channels to resolve and connect
+    setTimeout(next, 1000)
   })
   afterEach(function (next) {
     plasmaMaster.emit('kill')
     plasmaChild.emit('kill')
-    plasmaMaster = null
-    plasmaChild = null
-    next()
+    setTimeout(next, 1000)
   })
+
   it('sends chemical from child to master (w/o feedback)', function (next) {
     plasmaMaster.on({
-      channel: 'common'
+      channel: channelName
     }, function (c) {
       expect(c.type).to.eq('c1')
       next()
     })
     plasmaChild.emit({
       type: 'c1',
-      channel: 'common'
+      channel: channelName
     })
   })
+
   it('sends chemical from master to child (w/o feedback)', function (next) {
     plasmaChild.on({
-      channel: 'common'
+      channel: channelName
     }, function (c) {
       expect(c.type).to.eq('c1')
       next()
     })
     plasmaMaster.emit({
       type: 'c1',
-      channel: 'common'
+      channel: channelName
     })
   })
-  xit('sends chemical from child to master (with feedback)', function (next) {
+
+  it('sends chemical from child to master (with feedback)', function (next) {
     plasmaMaster.on({
-      channel: 'common'
+      channel: channelName
     }, function (c, respond) {
       expect(c.type).to.eq('c1')
       respond(null, true)
     })
     plasmaChild.emit({
       type: 'c1',
-      channel: 'common'
+      channel: channelName
     }, function (err, result) {
       expect(err).to.not.exist
       expect(result).to.eq(true)
       next()
     })
   })
-  xit('sends chemical from master to child (with feedback)', function (next) {
+  it('sends chemical from master to child (with feedback)', function (next) {
     plasmaChild.on({
-      channel: 'common'
+      channel: channelName
     }, function (c, respond) {
       expect(c.type).to.eq('c1')
       respond(null, true)
     })
     plasmaMaster.emit({
       type: 'c1',
-      channel: 'common'
+      channel: channelName
     }, function (err, result) {
       expect(err).to.not.exist
       expect(result).to.eq(true)

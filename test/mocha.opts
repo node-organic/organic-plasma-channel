@@ -1,6 +1,6 @@
 --require ./test/helpers/index.js
 --slow 10
---timeout 1000
+--timeout 10000
 --check-leaks
 --recursive
 --no-exit

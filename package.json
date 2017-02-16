@@ -6,8 +6,16 @@
   "scripts": {
     "test": "npm run test:style && mocha",
     "test:style": "eslint ./",
-    "release-patch": "npm run test:style && npm version patch && npm publish && git push --tags && git push origin master",
-    "release-minor": "npm run test:style && npm version minor && npm publish && git push --tags && git push origin master"
+    "release-patch": "npm run test && npm version patch && npm publish && git push --tags && git push origin master",
+    "release-minor": "npm run test && npm version minor && npm publish && git push --tags && git push origin master",
+    "release-major": "npm run test && npm version major && npm publish && git push --tags && git push origin master"
+  },
+  "dependencies": {
+    "discovery-swarm": "^4.2.0",
+    "json-socket": "^0.2.1",
+    "lodash": "^4.17.4",
+    "organic-plasma": "^1.2.1",
+    "organic-plasma-feedback": "^1.0.0"
   },
   "devDependencies": {
     "chai": "^3.4.1",
@@ -19,11 +27,5 @@
     "organic-plasma-feedback": "^1.0.0"
   },
   "author": "Boris Filipov",
-  "license": "MIT",
-  "dependencies": {
-    "discovery-swarm": "^4.2.0",
-    "eventemitter2": "^3.0.0",
-    "lodash": "^4.17.4",
-    "node-uuid": "^1.4.7"
-  }
+  "license": "MIT"
 }
