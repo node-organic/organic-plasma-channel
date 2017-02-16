@@ -44,11 +44,18 @@ module.exports = function (plasma, dna) {
         }
         return
       }
+      if (c.$channel_feedback_target) {
+        if (dna.debug) {
+          console.log(dna.port, 'got chemical feedback for us but will be handled in onceChemical [skipped local plasma emit]')
+        }
+        return
+      }
       if (dna.debug) console.log(dna.port, 'got chemical from a peer', c)
-      c.$sender_channel = dna.port // mark chemical so that we do not handle it
       if (dna.debug) console.log(dna.port, 'emit chemical to local plasma')
+      var originalSender = c.$sender_channel
+      c.$sender_channel = dna.port // mark chemical so that we do not handle it
       plasma.emit(c, function (err, data) {
-        if (dna.log) {
+        if (dna.debug) {
           console.log(dna.port, 'got reaction from local plasma and sending back to a peer err', err, 'data', data)
         }
         connection.emitChemical({
@@ -56,7 +63,8 @@ module.exports = function (plasma, dna) {
           err: err,
           data: data,
           $sender_channel: dna.port,
-          $channel_timestamp: c.$channel_timestamp
+          $channel_timestamp: c.$channel_timestamp,
+          $channel_feedback_target: originalSender
         })
       })
     })
@@ -66,7 +74,7 @@ module.exports = function (plasma, dna) {
     channel: dna.channelName
   }, function (c, callback) {
     if (c.$sender_channel === dna.port) {
-      if (dna.log) console.log(dna.port, 'got chemical emitted to local plasma [skipped boardcast]')
+      if (dna.debug) console.log(dna.port, 'got chemical emitted to local plasma [skipped boardcast]')
       return
     }
     if (dna.debug) {
@@ -74,7 +82,7 @@ module.exports = function (plasma, dna) {
     }
     sw.connections.forEach(function (connection) {
       connection = require('./lib/connection')(connection, dna)
-      var chemicalToEmit = _.extend(c, {
+      var chemicalToEmit = _.extend({}, c, {
         $channel_timestamp: (new Date().getTime()) + Math.random(),
         $sender_channel: dna.port
       })
@@ -83,6 +91,7 @@ module.exports = function (plasma, dna) {
           channel: dna.channelName,
           $channel_timestamp: chemicalToEmit.$channel_timestamp
         }, function (responseChemical) {
+          if (dna.debug) console.log(dna.port, 'CALLBACK FOR', c, 'WITH', responseChemical)
           callback(responseChemical.err, responseChemical.data)
         })
       }

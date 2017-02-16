@@ -30,18 +30,30 @@ Add the following dna per every cell which needs to communicate with a single ch
 
 Having cell1 and cell2 both configured to join in `channel1`.
 
-### emit chemicals
+### emit chemical and receive first callback from cells
 
 ```
 plasma.emit({
   type: 'myChemical',
   channel: 'channel1'
-}, function (err, data) {
+}, function callback (err, data) {
   ...
 })
 ```
 
-### listen for chemicals
+### emit chemical and receive every callback from cells
+
+```
+plasma.emit({
+  type: 'myChemical',
+  channel: 'channel1',
+  $feedback_timestamp: 'unique-value'
+}, function callback (err, data) {
+  ...
+})
+```
+
+### listen for chemicals and respond with callback
 
 ```
 plasma.on({
@@ -55,4 +67,4 @@ plasma.on({
 
 ### notes
 
-* `callback` is optional and if not needed `listenHandler` should not have second argument `callback`
+* `callback` is optional
