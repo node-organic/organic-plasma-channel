@@ -17,7 +17,8 @@ Add the following dna per every cell which needs to communicate with a single ch
   "channelName": String,
   "emitReady": String || false,
   "log": false,
-  "debug": false
+  "debug": false,
+  "disabled": false
 }
 ```
 

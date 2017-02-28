@@ -3,6 +3,7 @@ var _ = require('lodash')
 var plasmaFeedback = require('organic-plasma-feedback')
 
 module.exports = function (plasma, dna) {
+  if (dna.disabled) return
   // decorate plasma with feedback support just in case it is not
   plasma = plasmaFeedback(plasma)
   // create discovery-swarm
@@ -38,21 +39,8 @@ module.exports = function (plasma, dna) {
     connection.onChemical({
       channel: dna.channelName
     }, function (c) {
-      if (c.$sender_channel === dna.port) {
-        if (dna.debug) {
-          console.log(dna.port, 'got self-chemical [skipped local plasma emit]')
-        }
-        return
-      }
-      if (c.$channel_feedback_target) {
-        if (dna.debug) {
-          console.log(dna.port, 'got chemical feedback for us but will be handled in onceChemical [skipped local plasma emit]')
-        }
-        return
-      }
       if (dna.debug) console.log(dna.port, 'got chemical from a peer', c)
       if (dna.debug) console.log(dna.port, 'emit chemical to local plasma')
-      var originalSender = c.$sender_channel
       c.$sender_channel = dna.port // mark chemical so that we do not handle it
       plasma.emit(c, function (err, data) {
         if (dna.debug) {
@@ -63,8 +51,7 @@ module.exports = function (plasma, dna) {
           err: err,
           data: data,
           $sender_channel: dna.port,
-          $channel_timestamp: c.$channel_timestamp,
-          $channel_feedback_target: originalSender
+          $channel_timestamp: c.$channel_timestamp
         })
       })
     })
