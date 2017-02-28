@@ -30,13 +30,22 @@ module.exports = function (plasma, dna) {
       console.error(dna.port, err)
     }
   })
+  var connectionPool = []
 
   sw.on('connection', function (connection, info) {
     if (dna.debug) console.log(dna.port, 'got connection', info)
     // decorate connection with specific chemical boardcast features
     // based on organic-plasma + organic-plasma-feedback
-    connection = require('./lib/connection')(connection, dna)
-    connection.onChemical({
+    var chemicalConnection = require('./lib/connection')(connection, dna)
+    connectionPool.push(chemicalConnection)
+    chemicalConnection.on('close', function () {
+      for (var i = 0; i < connectionPool.length; i++) {
+        if (connectionPool[i] === chemicalConnection) {
+          connectionPool.splice(i, 1)
+        }
+      }
+    })
+    chemicalConnection.onChemical({
       channel: dna.channelName
     }, function (c) {
       if (dna.debug) console.log(dna.port, 'got chemical from a peer', c)
@@ -46,7 +55,7 @@ module.exports = function (plasma, dna) {
         if (dna.debug) {
           console.log(dna.port, 'got reaction from local plasma and sending back to a peer err', err, 'data', data)
         }
-        connection.emitChemical({
+        chemicalConnection.emitChemical({
           channel: dna.channelName,
           err: err,
           data: data,
@@ -65,16 +74,15 @@ module.exports = function (plasma, dna) {
       return
     }
     if (dna.debug) {
-      console.log(dna.port, 'broadcast local chemical ', c, 'to peers', sw.connections.length)
+      console.log(dna.port, 'broadcast local chemical ', c, 'to peers', connectionPool.length)
     }
-    sw.connections.forEach(function (connection) {
-      connection = require('./lib/connection')(connection, dna)
+    connectionPool.forEach(function (chemicalConnection) {
       var chemicalToEmit = _.extend({}, c, {
         $channel_timestamp: (new Date().getTime()) + Math.random(),
         $sender_channel: dna.port
       })
       if (callback) {
-        connection.onceChemical({
+        chemicalConnection.onceChemical({
           channel: dna.channelName,
           $channel_timestamp: chemicalToEmit.$channel_timestamp
         }, function (responseChemical) {
@@ -82,11 +90,14 @@ module.exports = function (plasma, dna) {
           callback(responseChemical.err, responseChemical.data)
         })
       }
-      connection.emitChemical(chemicalToEmit)
+      chemicalConnection.emitChemical(chemicalToEmit)
     })
   })
 
   plasma.on('kill', function (c, next) {
-    sw.destroy(next)
+    sw.destroy(function () {
+      connectionPool = null
+      next()
+    })
   })
 }
