@@ -7,7 +7,7 @@ module.exports = function (plasma, dna) {
   // decorate plasma with feedback support just in case it is not
   plasma = plasmaFeedback(plasma)
   // create discovery-swarm
-  var sw = swarm()
+  var sw = swarm(dna.swarmOpts || {})
   sw.join(dna.channelName) // can be any id/name/hash
   if (dna.port) {
     sw.listen(dna.port)
