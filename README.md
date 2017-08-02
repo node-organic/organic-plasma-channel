@@ -15,6 +15,7 @@ Add the following dna per every cell which needs to communicate with a single ch
   "source": "organic-plasma-channel",
   "port": Number,
   "channelName": String,
+  "swarmOpts": {},
   "emitReady": String || false,
   "log": false,
   "debug": false,
@@ -26,6 +27,7 @@ Add the following dna per every cell which needs to communicate with a single ch
 
 * `port` is *optional* but if provided should be different for different cells on single host
 * `emitReady` accepts `false` or `String` values, when String is provided it will be used to emit a chemical of that type when ready and listening for peers
+* `swarmOpts` is *optional* and if present will be passed as-is to [`discovery-swarm`'s constructor](https://github.com/mafintosh/discovery-swarm#var-sw--swarmopts)
 
 ## use
 
