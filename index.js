@@ -96,7 +96,7 @@ module.exports = function (plasma, dna) {
 
   plasma.on('kill', function (c, next) {
     sw.destroy(function () {
-      connectionPool = null
+      connectionPool = []
       next()
     })
   })
