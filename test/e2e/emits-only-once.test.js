@@ -5,8 +5,8 @@ describe('e2e general emit only once', function () {
   var plasmaChild
   var channelName = 'default'
   beforeEach(function (next) {
-    plasmaMaster = require('organic-plasma-feedback')(new Plasma())
-    plasmaChild = require('organic-plasma-feedback')(new Plasma())
+    plasmaMaster = new Plasma()
+    plasmaChild = new Plasma()
     next()
   })
   beforeEach(function (next) {

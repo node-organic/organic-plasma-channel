@@ -6,9 +6,9 @@ describe('e2e many cells', function () {
   var plasma3
   var channelName = 'default'
   beforeEach(function (next) {
-    plasma1 = require('organic-plasma-feedback')(new Plasma())
-    plasma2 = require('organic-plasma-feedback')(new Plasma())
-    plasma3 = require('organic-plasma-feedback')(new Plasma())
+    plasma1 = new Plasma()
+    plasma2 = new Plasma()
+    plasma3 = new Plasma()
     next()
   })
   beforeEach(function (next) {
