@@ -1,11 +1,21 @@
 var swarm = require('discovery-swarm')
 var _ = require('lodash')
-var plasmaFeedback = require('organic-plasma-feedback')
+
+// borrowed from
+// https://stackoverflow.com/questions/18391212/is-it-not-possible-to-stringify-an-error-using-json-stringify
+function replaceErrors (key, value) {
+  if (value instanceof Error) {
+    var error = {}
+    Object.getOwnPropertyNames(value).forEach(function (key) {
+      error[key] = value[key]
+    })
+    return error
+  }
+  return value
+}
 
 module.exports = function (plasma, dna) {
   if (dna.disabled) return
-  // decorate plasma with feedback support just in case it is not
-  plasma = plasmaFeedback(plasma)
   // create discovery-swarm
   var sw = swarm(dna.swarmOpts || {})
   sw.join(dna.channelName) // can be any id/name/hash
@@ -57,7 +67,7 @@ module.exports = function (plasma, dna) {
         }
         chemicalConnection.emitChemical({
           channel: dna.channelName,
-          err: err,
+          err: JSON.stringify(err, replaceErrors),
           data: data,
           $sender_channel: dna.port,
           $channel_timestamp: c.$channel_timestamp
@@ -87,7 +97,7 @@ module.exports = function (plasma, dna) {
           $channel_timestamp: chemicalToEmit.$channel_timestamp
         }, function (responseChemical) {
           if (dna.debug) console.log(dna.port, 'CALLBACK FOR', c, 'WITH', responseChemical)
-          callback(responseChemical.err, responseChemical.data)
+          callback(JSON.parse(responseChemical.err), responseChemical.data)
         })
       }
       chemicalConnection.emitChemical(chemicalToEmit)
