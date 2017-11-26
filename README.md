@@ -1,6 +1,6 @@
 # organic-plasma-channel
 
-[organic-plasma](https://github.com/outbounder/organic-plasma) decoration providing support for cross-cell peer to peer bi-directional communication based on [discovery-swarm](https://github.com/mafintosh/discovery-swarm)
+[organic-plasma v2.0](https://github.com/outbounder/organic-plasma) based organelle providing support for cross-cell peer to peer bi-directional communication based on [discovery-swarm](https://github.com/mafintosh/discovery-swarm)
 
 ## install
 
@@ -8,7 +8,7 @@
 
 ## setup
 
-Add the following dna per every cell which needs to communicate with a single channel
+Add the following dna per every cell which needs to communicate through a channel
 
 ```
 {
@@ -44,13 +44,12 @@ plasma.emit({
 })
 ```
 
-### emit chemical and receive every callback from cells
+### emit chemical and receive every callback from all cells who respond
 
 ```
 plasma.emit({
   type: 'myChemical',
-  channel: 'channel1',
-  $feedback_timestamp: 'unique-value'
+  channel: 'channel1'
 }, function callback (err, data) {
   ...
 })
