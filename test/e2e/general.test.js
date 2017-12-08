@@ -91,4 +91,21 @@ describe('e2e general', function () {
       next()
     })
   })
+
+  it('sends chemical from child to master (with feedback, but no data)', function (next) {
+    plasmaMaster.on({
+      channel: channelName
+    }, function (c, respond) {
+      expect(c.type).to.eq('c1')
+      respond()
+    })
+    plasmaChild.emit({
+      type: 'c1',
+      channel: channelName
+    }, function (err, result) {
+      expect(err).to.not.exist
+      expect(result).to.not.exist
+      next()
+    })
+  })
 })
