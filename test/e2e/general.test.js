@@ -75,6 +75,7 @@ describe('e2e general', function () {
       next()
     })
   })
+
   it('sends chemical from master to child (with feedback)', function (next) {
     plasmaChild.on({
       channel: channelName
