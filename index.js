@@ -11,7 +11,7 @@ function replaceErrors (key, value) {
     })
     return error
   }
-  return value
+  return value || null
 }
 
 module.exports = function (plasma, dna) {
