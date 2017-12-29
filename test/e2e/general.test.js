@@ -131,4 +131,50 @@ describe('e2e general', function () {
       next()
     })
   })
+
+
+
+  it('sends two parallel chemical from child to master (with feedback and data)', function (next) {
+    var c1CallbackHit = false
+    var c2CallbackHit = false
+
+    plasmaMaster.on({
+      type: 'c1',
+      channel: channelName
+    }, function (c, respond) {
+      expect(c.type).to.eq('c1')
+      respond('ok c1')
+    })
+    plasmaMaster.on({
+      type: 'c2',
+      channel: channelName
+    }, function (c, respond) {
+      expect(c.type).to.eq('c2')
+      respond('ok c2')
+    })
+
+    plasmaChild.emit({
+      type: 'c1',
+      channel: channelName
+    }, function (err, result) {
+      expect(err).to.not.exist
+      expect(result).to.exist
+      c1CallbackHit = true
+    })
+
+    plasmaChild.emit({
+      type: 'c2',
+      channel: channelName
+    }, function (err, result) {
+      expect(err).to.not.exist
+      expect(result).to.exist
+      c2CallbackHit = true
+    })
+
+    setTimeout(function () {
+      expect(c1CallbackHit).to.eq(true)
+      expect(c2CallbackHit).to.eq(true)
+      next()
+    }, 1000)
+  })
 })
