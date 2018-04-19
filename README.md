@@ -19,7 +19,7 @@ Add the following dna per every cell which needs to communicate through a channe
     "utp": false,
     "tcp": true,
     "dns": true,
-    "dht": false,
+    "dht": false
   },
   "emitReady": String || false,
   "readyOnListening": false,
