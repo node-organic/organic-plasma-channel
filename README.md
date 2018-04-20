@@ -1,6 +1,6 @@
 # organic-plasma-channel
 
-[organic-plasma v2.0](https://github.com/outbounder/organic-plasma) based organelle providing support for cross-cell peer to peer bi-directional communication based on [discovery-swarm](https://github.com/mafintosh/discovery-swarm)
+[organic-plasma v2.0](https://github.com/node-organic/organic-plasma) based organelle providing support for cross-cell peer to peer bi-directional communication based on [discovery-swarm](https://github.com/mafintosh/discovery-swarm)
 
 ## install
 
