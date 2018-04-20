@@ -7,30 +7,22 @@ describe('e2e general', function () {
   beforeEach(function (next) {
     plasmaMaster = new Plasma()
     plasmaChild = new Plasma()
-    next()
-  })
-  beforeEach(function (next) {
-    plasmaMaster.on('masterReady', function (c) { next() })
     plasmaMaster.channel = new PlasmaChannel(plasmaMaster, {
+      swarmOpts: require('./swarmOpts'),
       channelName: channelName,
       emitReady: 'masterReady'
     })
-  })
-  beforeEach(function (next) {
-    plasmaChild.on('childReady', function (c) { next() })
+    plasmaChild.on('childReady', function (c) { setTimeout(next, 100) })
     plasmaChild.channel = new PlasmaChannel(plasmaChild, {
+      swarmOpts: require('./swarmOpts'),
       channelName: channelName,
       emitReady: 'childReady'
     })
   })
-  beforeEach(function (next) {
-    // wait channels to resolve and connect
-    setTimeout(next, 1000)
-  })
   afterEach(function (next) {
     plasmaMaster.emit('kill')
     plasmaChild.emit('kill')
-    setTimeout(next, 1000)
+    setTimeout(next, 0)
   })
 
   it('sends chemical from child to master (w/o feedback)', function (next) {
@@ -173,6 +165,6 @@ describe('e2e general', function () {
       expect(c1CallbackHit).to.eq(1)
       expect(c2CallbackHit).to.eq(1)
       next()
-    }, 1000)
+    }, 100)
   })
 })

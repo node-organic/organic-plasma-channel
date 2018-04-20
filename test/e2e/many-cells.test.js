@@ -9,38 +9,28 @@ describe('e2e many cells', function () {
     plasma1 = new Plasma()
     plasma2 = new Plasma()
     plasma3 = new Plasma()
-    next()
-  })
-  beforeEach(function (next) {
-    plasma1.on('ready', function (c) { next() })
+    plasma1.on('ready', function (c) { setTimeout(next, 100) })
     plasma1.channel = new PlasmaChannel(plasma1, {
+      swarmOpts: require('./swarmOpts'),
       channelName: channelName,
       emitReady: 'ready'
     })
-  })
-  beforeEach(function (next) {
-    plasma2.on('ready', function (c) { next() })
     plasma2.channel = new PlasmaChannel(plasma2, {
+      swarmOpts: require('./swarmOpts'),
       channelName: channelName,
       emitReady: 'ready'
     })
-  })
-  beforeEach(function (next) {
-    plasma3.on('ready', function (c) { next() })
     plasma3.channel = new PlasmaChannel(plasma3, {
+      swarmOpts: require('./swarmOpts'),
       channelName: channelName,
       emitReady: 'ready'
     })
-  })
-  beforeEach(function (next) {
-    // wait channels to resolve and connect
-    setTimeout(next, 1000)
   })
   afterEach(function (next) {
     plasma1.emit('kill')
     plasma2.emit('kill')
     plasma3.emit('kill')
-    setTimeout(next, 1000)
+    setTimeout(next, 0)
   })
 
   it('sends chemical from one instance to others (w/o feedback)', function (next) {
@@ -49,6 +39,10 @@ describe('e2e many cells', function () {
       counter += 1
       if (counter === 2) next()
     }
+    plasma3.emit({
+      type: 'c1',
+      channel: channelName
+    })
     plasma1.on({
       channel: channelName
     }, function (c) {
@@ -60,27 +54,11 @@ describe('e2e many cells', function () {
     }, function (c) {
       expect(c.type).to.eq('c1')
       checkNext()
-    })
-    plasma3.emit({
-      type: 'c1',
-      channel: channelName
     })
   })
 
   it('sends chemical from one instance to others (with feedback)', function (next) {
     var counter = 0
-    plasma1.on({
-      channel: channelName
-    }, function (c, respond) {
-      expect(c.type).to.eq('c1')
-      respond(null, 1)
-    })
-    plasma2.on({
-      channel: channelName
-    }, function (c, respond) {
-      expect(c.type).to.eq('c1')
-      respond(null, 1)
-    })
     plasma3.emit({
       type: 'c1',
       channel: channelName,
@@ -91,6 +69,18 @@ describe('e2e many cells', function () {
       if (counter === 2) {
         next()
       }
+    })
+    plasma1.on({
+      channel: channelName
+    }, function (c, respond) {
+      expect(c.type).to.eq('c1')
+      respond(null, 1)
+    })
+    plasma2.on({
+      channel: channelName
+    }, function (c, respond) {
+      expect(c.type).to.eq('c1')
+      respond(null, 1)
     })
   })
 })
