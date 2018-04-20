@@ -1,6 +1,6 @@
 {
   "name": "organic-plasma-channel",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "[organic-plasma](https://github.com/node-organic/organic-plasma) decoration providing support for cross-cell peer to peer bi-directional communication based on [discovery-swarm](https://github.com/mafintosh/discovery-swarm)",
   "main": "index.js",
   "scripts": {
