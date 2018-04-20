@@ -1,17 +1,21 @@
 var PlasmaChannel = require('../../index')
 var Plasma = require('organic-plasma')
-describe('e2e general emit only once', function () {
+describe('e2e one after another', function () {
   var plasmaMaster
   var plasmaChild
   var channelName = 'default'
   beforeEach(function (next) {
     plasmaMaster = new Plasma()
-    plasmaChild = new Plasma()
+    plasmaMaster.on('masterReady', function (c) { setTimeout(next, 100) })
     plasmaMaster.channel = new PlasmaChannel(plasmaMaster, {
       swarmOpts: require('./swarmOpts'),
       channelName: channelName,
-      emitReady: 'masterReady'
+      emitReady: 'masterReady',
+      readyOnListening: true, // emitReady on listening event, not on first connected peer
     })
+  })
+  beforeEach(function (next) {
+    plasmaChild = new Plasma()
     plasmaChild.on('childReady', function (c) { setTimeout(next, 100) })
     plasmaChild.channel = new PlasmaChannel(plasmaChild, {
       swarmOpts: require('./swarmOpts'),

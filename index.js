@@ -18,18 +18,11 @@ module.exports = function (plasma, dna) {
   if (dna.disabled) return
   // create discovery-swarm
   var sw = swarm(dna.swarmOpts || {})
-  sw.join(dna.channelName) // can be any id/name/hash
-  if (dna.port) {
-    sw.listen(dna.port)
-  } else {
-    dna.port = '[dynamic]' + (Math.ceil(Math.random() * 1000) + 1000).toString()
-    sw.listen()
-  }
   sw.on('listening', function () {
     if (dna.log) {
       console.log('listening', dna.port)
     }
-    if (dna.emitReady) {
+    if (dna.emitReady && dna.readyOnListening) {
       plasma.emit(dna.emitReady)
     }
   })
@@ -41,6 +34,8 @@ module.exports = function (plasma, dna) {
     }
   })
   var connectionPool = []
+  var bufferedEvents = []
+  var ready = false
 
   sw.on('connection', function (connection, info) {
     if (dna.debug) console.log(dna.port, 'got connection', info)
@@ -48,6 +43,11 @@ module.exports = function (plasma, dna) {
     // based on organic-plasma + organic-plasma-feedback
     var chemicalConnection = require('./lib/connection')(connection, dna)
     connectionPool.push(chemicalConnection)
+    // emitReady if that's the first connected peer
+    if (dna.emitReady && !dna.readyOnListening && !ready && connectionPool.length === 1) {
+      ready = true
+      plasma.emit(dna.emitReady)
+    }
     chemicalConnection.on('close', function () {
       for (var i = 0; i < connectionPool.length; i++) {
         if (connectionPool[i] === chemicalConnection) {
@@ -75,6 +75,44 @@ module.exports = function (plasma, dna) {
       })
     })
   })
+  sw.join(dna.channelName) // can be any id/name/hash
+  if (dna.port) {
+    sw.listen(dna.port)
+  } else {
+    dna.port = '[dynamic]' + (Math.ceil(Math.random() * 1000) + 1000).toString()
+    sw.listen()
+  }
+
+  var emitChemicalToPeer = function (chemicalToEmit, chemicalConnection, callback) {
+    if (callback) {
+      chemicalConnection.onceChemical({
+        channel: dna.channelName,
+        $channel_timestamp: chemicalToEmit.$channel_timestamp
+      }, function (responseChemical) {
+        if (dna.debug) console.log(dna.port, 'CALLBACK FOR', chemicalToEmit, 'WITH', responseChemical)
+        callback(JSON.parse(responseChemical.err), responseChemical.data)
+      })
+    }
+    chemicalConnection.emitChemical(chemicalToEmit)
+  }
+
+  var bufferPumpTimeoutHandle
+
+  var pumpBufferedEvents = function () {
+    if (!connectionPool.length) {
+      clearTimeout(bufferPumpTimeoutHandle)
+      bufferPumpTimeoutHandle = setTimeout(pumpBufferedEvents, 100)
+      return
+    }
+    if (bufferedEvents.length) {
+      bufferedEvents.forEach(function (bufferedEvent) {
+        connectionPool.forEach(function (chemicalConnection) {
+          emitChemicalToPeer(bufferedEvent.chemicalToEmit, chemicalConnection, bufferedEvent.callback)
+        })
+      })
+      bufferedEvents.length = 0
+    }
+  }
 
   plasma.on({
     channel: dna.channelName
@@ -86,27 +124,29 @@ module.exports = function (plasma, dna) {
     if (dna.debug) {
       console.log(dna.port, 'broadcast local chemical ', c, 'to peers', connectionPool.length)
     }
-    connectionPool.forEach(function (chemicalConnection) {
-      var chemicalToEmit = _.extend({}, c, {
-        $channel_timestamp: (new Date().getTime()) + Math.random(),
-        $sender_channel: dna.port
-      })
-      if (callback) {
-        chemicalConnection.onceChemical({
-          channel: dna.channelName,
-          $channel_timestamp: chemicalToEmit.$channel_timestamp
-        }, function (responseChemical) {
-          if (dna.debug) console.log(dna.port, 'CALLBACK FOR', c, 'WITH', responseChemical)
-          callback(JSON.parse(responseChemical.err), responseChemical.data)
-        })
+    var chemicalToEmit = _.extend({}, c, {
+      $channel_timestamp: (new Date().getTime()) + Math.random(),
+      $sender_channel: dna.port
+    })
+    if (!dna.disableNoPeersEventBuffer && !connectionPool.length) {
+      if (dna.log) {
+        console.log('no connected peers, buffer event', chemicalToEmit)
       }
-      chemicalConnection.emitChemical(chemicalToEmit)
+      bufferedEvents.push({
+        chemicalToEmit,
+        callback,
+      })
+      pumpBufferedEvents()
+      return
+    }
+    connectionPool.forEach(function (chemicalConnection) {
+      emitChemicalToPeer(chemicalToEmit, chemicalConnection, callback)
     })
   })
 
   plasma.on('kill', function (c, next) {
     sw.destroy(function () {
-      connectionPool = []
+      connectionPool.length = 0
       next()
     })
   })
