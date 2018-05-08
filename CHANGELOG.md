@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.1.1] - 2018-05-08
+
+### Fixed
+
+* cleanup on kill via [PR 11](https://github.com/node-organic/organic-plasma-channel/pull/11)
+
 ## [2.1.0] - 2018-04-20
 
 ### Changed
