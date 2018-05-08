@@ -145,6 +145,8 @@ module.exports = function (plasma, dna) {
   })
 
   plasma.on('kill', function (c, next) {
+    clearTimeout(bufferPumpTimeoutHandle)
+    bufferedEvents.length = 0
     sw.destroy(function () {
       connectionPool.length = 0
       next()
