@@ -27,6 +27,12 @@ describe('e2e many cells', function () {
     })
   })
   afterEach(function (next) {
+    expect(plasma3.channel.getConnectionPool().length).to.eq(2)
+    expect(plasma3.channel.getConnectionPool()[0].listenerCount('message')).to.eq(1)
+    expect(plasma3.channel.getConnectionPool()[1].listenerCount('message')).to.eq(1)
+    next()
+  })
+  afterEach(function (next) {
     plasma1.emit('kill')
     plasma2.emit('kill')
     plasma3.emit('kill')
@@ -37,8 +43,44 @@ describe('e2e many cells', function () {
     var counter = 0
     var checkNext = function () {
       counter += 1
-      if (counter === 2) next()
+      if (counter === 10 * 2) next()
     }
+    plasma3.emit({
+      type: 'c1',
+      channel: channelName
+    })
+    plasma3.emit({
+      type: 'c1',
+      channel: channelName
+    })
+    plasma3.emit({
+      type: 'c1',
+      channel: channelName
+    })
+    plasma3.emit({
+      type: 'c1',
+      channel: channelName
+    })
+    plasma3.emit({
+      type: 'c1',
+      channel: channelName
+    })
+    plasma3.emit({
+      type: 'c1',
+      channel: channelName
+    })
+    plasma3.emit({
+      type: 'c1',
+      channel: channelName
+    })
+    plasma3.emit({
+      type: 'c1',
+      channel: channelName
+    })
+    plasma3.emit({
+      type: 'c1',
+      channel: channelName
+    })
     plasma3.emit({
       type: 'c1',
       channel: channelName
@@ -66,7 +108,7 @@ describe('e2e many cells', function () {
     }, function (err, result) {
       expect(err).to.not.exist
       counter += result
-      if (counter === 2) {
+      if (counter === 3) {
         next()
       }
     })
@@ -80,7 +122,7 @@ describe('e2e many cells', function () {
       channel: channelName
     }, function (c, respond) {
       expect(c.type).to.eq('c1')
-      respond(null, 1)
+      respond(null, 2)
     })
   })
 })

@@ -15,9 +15,19 @@ function replaceErrors (key, value) {
 }
 
 module.exports = function (plasma, dna) {
-  if (dna.disabled) return
+  var sw
+  var connectionPool = []
+  var bufferedEvents = []
+  var ready = false
+  var returnObject = {
+    getSwarm: function () { return sw },
+    getConnectionPool: function () { return connectionPool },
+    getBufferedEvents: function () { return bufferedEvents },
+    isReady: function () { return ready },
+  }
+  if (dna.disabled) return returnObject
   // create discovery-swarm
-  var sw = swarm(dna.swarmOpts || {})
+  sw = swarm(dna.swarmOpts || {})
   sw.on('listening', function () {
     if (dna.log) {
       console.log('listening', dna.port)
@@ -33,10 +43,6 @@ module.exports = function (plasma, dna) {
       console.error(dna.port, err)
     }
   })
-  var connectionPool = []
-  var bufferedEvents = []
-  var ready = false
-
   sw.on('connection', function (connection, info) {
     if (dna.debug) console.log(dna.port, 'got connection', info)
     // decorate connection with specific chemical boardcast features
@@ -84,7 +90,11 @@ module.exports = function (plasma, dna) {
   }
 
   var emitChemicalToPeer = function (chemicalToEmit, chemicalConnection, callback) {
-    if (callback) {
+    // plasma.emit (2.x.x) defaults to `function noop () {}` if no callback is passed as argument
+    // to prevent attaching listeners to events that will never come, and result to a memory leak
+    // check if the callback function is default one from `organic-plasma`, if so,
+    // don't listen for result for that emit, to pass back to the peer emitted the event
+    if (callback && callback.name !== 'noop') {
       chemicalConnection.onceChemical({
         channel: dna.channelName,
         $channel_timestamp: chemicalToEmit.$channel_timestamp
@@ -152,4 +162,6 @@ module.exports = function (plasma, dna) {
       next()
     })
   })
+
+  return returnObject
 }
