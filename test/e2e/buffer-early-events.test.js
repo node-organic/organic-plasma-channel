@@ -51,7 +51,7 @@ describe('e2e buffer early events', function () {
       expect(callbackCount).to.eq(1)
       expect(handleCount).to.eq(1)
       next()
-    }, 100)
+    }, 200)
   })
   after(function (next) {
     plasmaMaster.emit('kill')
